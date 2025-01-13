@@ -43,10 +43,12 @@ static const unsigned int HDPI = 11811;
 static const unsigned int VDPI = 11811;
 static const unsigned int NUM_COLORS = 0;
 static const unsigned int VAL_COLORS = 0x1000000;
+static const int NUM_CHANNELS = 3;
+static const int ALIGN_TO = 4;
 
 // функция вычисления отступа по ширине
 static int GetBMPStride(int w) {
-    return 4 * ((w * 3 + 3) / 4);
+    return ALIGN_TO * ((w * NUM_CHANNELS + NUM_CHANNELS) / ALIGN_TO);
 }
 
 // напишите эту функцию
@@ -103,7 +105,13 @@ Image LoadBMP(const Path& file) {
     // читаем заголовок: он содержит формат, размеры изображения
     // и максимальное значение цвета
     ifs.read((char*)&file_header, sizeof(file_header));
+    if (ifs.bad()) {
+        return {};
+    }
     ifs.read((char*)&info_header, sizeof(info_header));
+    if (ifs.bad()) {
+        return {};
+    }
 
     // мы поддерживаем изображения только формата P6
     // с максимальным значением цвета 255
@@ -117,6 +125,9 @@ Image LoadBMP(const Path& file) {
     for (int y = info_header.height - 1; y >= 0; --y) {
         Color* line = result.GetLine(y);
         ifs.read(buff.data(), buff.size());
+        if (ifs.bad()) {
+            return {};
+        }
 
         for (int x = 0; x < info_header.width; ++x) {
             line[x].b = static_cast<byte>(buff[x * 3 + 0]);
